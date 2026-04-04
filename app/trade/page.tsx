@@ -3,8 +3,18 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
-import { ArrowLeft, Shield, Loader2, AlertCircle, ChevronDown, CheckCircle2, Clock, TrendingUp, Zap } from "lucide-react";
+import {
+  ArrowLeft, Shield, Loader2, AlertCircle, ChevronDown,
+  CheckCircle2, Clock, TrendingUp, Zap, ExternalLink, Copy,
+} from "lucide-react";
 import type { IntentV1 } from "@/types/intent";
+
+// ---------------------------------------------------------------------------
+// Config — swap these when Daniel / Hamza share the real addresses
+// ---------------------------------------------------------------------------
+const VAULT_ADDRESS = "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe"; // TODO: replace with VeraFi vault
+const PREMIUM_DROPS = "5000000"; // 5 XRP fixed (Daniel's mock)
+const XRPL_EXPLORER = "https://testnet.xrpl.org/transactions";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,6 +50,13 @@ type FormState = {
   isPut: boolean;
 };
 
+type BuyState =
+  | { status: "idle" }
+  | { status: "confirming" }
+  | { status: "pending" }
+  | { status: "success"; txHash: string }
+  | { status: "error"; message: string };
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -54,25 +71,11 @@ function shortHash(h: string) {
   return h.length > 20 ? h.slice(0, 10) + "…" + h.slice(-8) : h;
 }
 
-function Countdown({ validUntil }: { validUntil: number }) {
-  const [remaining, setRemaining] = useState(() =>
-    Math.max(0, Math.floor((validUntil - Date.now()) / 1000))
-  );
-
-  // Simple countdown using useState + useEffect pattern
-  if (typeof window !== "undefined") {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [, forceUpdate] = useState(0);
-    // Rerender every second — hacky but fine for demo
-    setTimeout(() => forceUpdate((n) => n + 1), 1000);
-  }
-
-  const secs = Math.max(0, Math.floor((validUntil - Date.now()) / 1000));
-  return (
-    <span className={secs < 10 ? "text-red-400" : "text-brand-cyan"}>
-      {secs}s
-    </span>
-  );
+function toHex(str: string): string {
+  return Array.from(str)
+    .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -93,8 +96,11 @@ export default function TradePage() {
     | { status: "error"; message: string }
   >({ status: "idle" });
 
+  const [buyState, setBuyState] = useState<BuyState>({ status: "idle" });
   const [expiryOpen, setExpiryOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
+  // ── Get Quote ────────────────────────────────────────────────────────────
   const handleGetQuote = useCallback(async () => {
     const amount = parseFloat(form.amount);
     const strike = parseFloat(form.strike);
@@ -115,6 +121,7 @@ export default function TradePage() {
     };
 
     setQuoteState({ status: "loading" });
+    setBuyState({ status: "idle" });
 
     try {
       const res = await fetch("/api/quote", {
@@ -133,9 +140,63 @@ export default function TradePage() {
     }
   }, [form]);
 
+  // ── Buy Option ───────────────────────────────────────────────────────────
+  const handleBuy = useCallback(async () => {
+    if (quoteState.status !== "success") return;
+    const { intent } = quoteState;
+
+    setBuyState({ status: "confirming" });
+
+    try {
+      const { default: sdk } = await import("@crossmarkio/sdk");
+
+      // Encode IntentV1 as hex memo
+      const memoData = toHex(JSON.stringify(intent));
+      const memoType = toHex("application/json");
+
+      setBuyState({ status: "pending" });
+
+      const result = await sdk.methods.signAndSubmitAndWait({
+        TransactionType: "Payment",
+        Amount: PREMIUM_DROPS,
+        Destination: VAULT_ADDRESS,
+        Memos: [
+          {
+            Memo: {
+              MemoType: memoType,
+              MemoData: memoData,
+            },
+          },
+        ],
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const txHash = (result?.response?.data?.resp as any)?.result?.hash as string | undefined;
+
+      if (!txHash) {
+        throw new Error("Transaction did not return a hash. Check your wallet.");
+      }
+
+      setBuyState({ status: "success", txHash });
+    } catch (err) {
+      setBuyState({
+        status: "error",
+        message: err instanceof Error ? err.message : "Transaction failed.",
+      });
+    }
+  }, [quoteState]);
+
+  // ── Copy helper ──────────────────────────────────────────────────────────
+  const copyHash = (hash: string) => {
+    navigator.clipboard.writeText(hash);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text">
-      {/* ── Nav ── */}
+      {/* Nav */}
       <nav className="border-b border-white/[0.06] px-6 py-4 flex items-center gap-4">
         <Link
           href="/"
@@ -158,11 +219,10 @@ export default function TradePage() {
 
         {/* ── Left: RFQ Form ── */}
         <div className="flex flex-col gap-6">
-          {/* Header */}
           <div>
             <h1 className="text-2xl font-bold text-brand-text">Request a Quote</h1>
             <p className="text-brand-text/40 text-sm mt-1">
-              Prices are computed inside a Trusted Execution Environment and attested on-chain.
+              Prices computed inside TEE · Every quote attested on Flare.
             </p>
           </div>
 
@@ -242,10 +302,10 @@ export default function TradePage() {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-brand-text/30 font-mono">USD</span>
               </div>
               <p className="text-xs text-brand-text/30">
-                Spot: $2.35 · {form.isPut ? "Put" : "Call"} is{" "}
+                Spot: $2.35 ·{" "}
                 {parseFloat(form.strike) > 2.35
-                  ? form.isPut ? "in the money" : "out of the money"
-                  : form.isPut ? "out of the money" : "in the money"}
+                  ? form.isPut ? "ITM Put" : "OTM Call"
+                  : form.isPut ? "OTM Put" : "ITM Call"}
               </p>
             </div>
           </div>
@@ -281,7 +341,7 @@ export default function TradePage() {
             </div>
           </div>
 
-          {/* CTA */}
+          {/* Get Quote CTA */}
           <button
             onClick={handleGetQuote}
             disabled={quoteState.status === "loading"}
@@ -304,14 +364,14 @@ export default function TradePage() {
           </button>
 
           {quoteState.status === "error" && (
-            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/5 border border-red-400/20 rounded-xl px-4 py-3 animate-fade-in">
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/5 border border-red-400/20 rounded-xl px-4 py-3">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {quoteState.message}
             </div>
           )}
         </div>
 
-        {/* ── Right: Quote Panel ── */}
+        {/* ── Right: Quote + Buy Panel ── */}
         <div className="flex flex-col gap-6">
           {quoteState.status !== "success" ? (
             <div className="glass-card p-8 flex flex-col items-center justify-center gap-4 min-h-[400px]">
@@ -320,7 +380,7 @@ export default function TradePage() {
                   <div className="w-16 h-16 rounded-full border-2 border-brand-blue/30 border-t-brand-blue animate-spin" />
                   <div className="text-center">
                     <p className="font-semibold text-brand-text">Running Monte Carlo</p>
-                    <p className="text-sm text-brand-text/40 mt-1">Inside Intel TDX enclave · Flare Compute Extension</p>
+                    <p className="text-sm text-brand-text/40 mt-1">Inside Intel TDX · Flare Compute Extension</p>
                   </div>
                   <div className="w-full bg-white/[0.04] rounded-full h-1 overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-brand-blue to-brand-cyan animate-pulse w-2/3 rounded-full" />
@@ -339,7 +399,7 @@ export default function TradePage() {
               )}
             </div>
           ) : (
-            <div className="flex flex-col gap-4 animate-fade-in">
+            <div className="flex flex-col gap-4">
               {/* Attestation badge */}
               <div className="glass-card px-5 py-4 border border-brand-cyan/20 flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-brand-cyan/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -349,9 +409,6 @@ export default function TradePage() {
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-bold text-brand-cyan uppercase tracking-widest">TEE Attested</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan" />
-                    <span className="text-xs text-brand-text/40">
-                      <Countdown validUntil={quoteState.quote.validUntil} /> remaining
-                    </span>
                   </div>
                   <p className="text-xs text-brand-text/40 font-mono break-all">
                     Seed: <span className="text-brand-text/60">{quoteState.quote.seed}</span>
@@ -366,13 +423,11 @@ export default function TradePage() {
               <div className="glass-card p-6 flex flex-col gap-1">
                 <p className="text-xs text-brand-text/40 uppercase tracking-widest font-semibold">Premium</p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-4xl font-bold text-brand-text">
-                    {fmt(quoteState.quote.totalPremiumXRP, 4)}
-                  </span>
-                  <span className="text-brand-text/40 font-mono">fXRP</span>
+                  <span className="text-4xl font-bold text-brand-text">5.0000</span>
+                  <span className="text-brand-text/40 font-mono">XRP</span>
                 </div>
                 <p className="text-xs text-brand-text/30 mt-0.5">
-                  For {form.amount} fXRP · {form.isPut ? "Put" : "Call"} · Strike ${form.strike} · {form.expiry.label}
+                  Fixed mock · {form.amount} fXRP · {form.isPut ? "Put" : "Call"} · Strike ${form.strike} · {form.expiry.label}
                 </p>
               </div>
 
@@ -401,11 +456,7 @@ export default function TradePage() {
                   <div className="h-px bg-white/[0.06]" />
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-brand-text/30">Spread</span>
-                    <span className={`text-xs font-mono ${
-                      Math.abs(quoteState.quote.priceMC - quoteState.quote.priceBS) < 0.001
-                        ? "text-brand-cyan"
-                        : "text-brand-text/50"
-                    }`}>
+                    <span className="text-xs font-mono text-brand-cyan">
                       {fmt(Math.abs(quoteState.quote.priceMC - quoteState.quote.priceBS), 6)} fXRP
                     </span>
                   </div>
@@ -421,9 +472,9 @@ export default function TradePage() {
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { label: "Delta", value: fmt(quoteState.quote.delta, 4), hint: "Price sensitivity" },
-                    { label: "Vega", value: fmt(quoteState.quote.vega, 4), hint: "Vol sensitivity" },
-                    { label: "Spot", value: `$${quoteState.quote.spotPrice}`, hint: "FTSO price" },
-                    { label: "IV", value: `${(quoteState.quote.impliedVol * 100).toFixed(0)}%`, hint: "Implied volatility" },
+                    { label: "Vega",  value: fmt(quoteState.quote.vega, 4),  hint: "Vol sensitivity" },
+                    { label: "Spot",  value: `$${quoteState.quote.spotPrice}`, hint: "FTSO price" },
+                    { label: "IV",    value: `${(quoteState.quote.impliedVol * 100).toFixed(0)}%`, hint: "Implied volatility" },
                   ].map((g) => (
                     <div key={g.label} className="bg-white/[0.03] rounded-xl p-3">
                       <p className="text-xs text-brand-text/30">{g.label}</p>
@@ -434,19 +485,86 @@ export default function TradePage() {
                 </div>
               </div>
 
-              {/* Buy button */}
-              <button
-                className="w-full py-4 rounded-2xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2
-                  bg-gradient-to-r from-brand-purple to-brand-blue text-white
-                  hover:opacity-90 hover:shadow-[0_0_24px_rgba(155,107,255,0.4)]"
-              >
-                <Shield className="w-4 h-4" />
-                Buy Option · {fmt(quoteState.quote.totalPremiumXRP, 4)} fXRP
-              </button>
+              {/* ── Buy / TX status ── */}
+              {buyState.status === "success" ? (
+                <div className="glass-card p-5 border border-brand-cyan/30 flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-brand-cyan/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-brand-cyan" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-brand-text text-sm">Option Submitted</p>
+                      <p className="text-xs text-brand-text/40">XRPL Payment with RFQ memo confirmed</p>
+                    </div>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-xl px-4 py-3 flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-brand-text/60 truncate">{buyState.txHash}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => copyHash(buyState.txHash)}
+                        className="text-brand-text/40 hover:text-brand-text/80 transition-colors"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                      <a
+                        href={`${XRPL_EXPLORER}/${buyState.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-cyan hover:text-brand-cyan/80 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                  {copied && <p className="text-xs text-brand-cyan text-center">Copied!</p>}
+                  <button
+                    onClick={() => { setQuoteState({ status: "idle" }); setBuyState({ status: "idle" }); }}
+                    className="text-xs text-brand-text/40 hover:text-brand-text/70 transition-colors text-center"
+                  >
+                    New quote →
+                  </button>
+                </div>
+              ) : buyState.status === "error" ? (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/5 border border-red-400/20 rounded-xl px-4 py-3">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {buyState.message}
+                  </div>
+                  <button
+                    onClick={handleBuy}
+                    className="w-full py-4 rounded-2xl font-bold text-sm
+                      bg-gradient-to-r from-brand-purple to-brand-blue text-white
+                      hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleBuy}
+                  disabled={buyState.status === "confirming" || buyState.status === "pending"}
+                  className="w-full py-4 rounded-2xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2
+                    bg-gradient-to-r from-brand-purple to-brand-blue text-white
+                    hover:opacity-90 hover:shadow-[0_0_24px_rgba(155,107,255,0.4)]
+                    disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {buyState.status === "confirming" || buyState.status === "pending" ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {buyState.status === "confirming" ? "Confirm in Crossmark…" : "Sending XRPL Payment…"}
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4" />
+                      Buy Option · 5 XRP
+                    </>
+                  )}
+                </button>
+              )}
 
               <p className="text-xs text-brand-text/20 text-center">
-                Execution sends an XRPL Payment with RFQ memo to the VeraFi vault.
-                Quote ID: <span className="font-mono">{quoteState.quote.quoteId.slice(0, 8)}…</span>
+                Sends XRPL Payment with IntentV1 memo → VeraFi vault ·{" "}
+                <span className="font-mono">{shortHash(VAULT_ADDRESS)}</span>
               </p>
             </div>
           )}
