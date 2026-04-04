@@ -78,11 +78,12 @@ async function pollXamanPayload(
 // ---------------------------------------------------------------------------
 // Wallet definitions
 // ---------------------------------------------------------------------------
-const WALLETS: { id: WalletId; label: string; description: string; icon: React.ReactNode }[] = [
+const WALLETS: { id: WalletId; label: string; description: string; icon: React.ReactNode; wip?: boolean }[] = [
   {
     id: "xaman",
     label: "Xaman",
     description: "Scan QR with the Xaman app",
+    wip: true,
     icon: (
       <svg viewBox="0 0 40 40" fill="none" className="w-7 h-7">
         <rect width="40" height="40" rx="10" fill="#1A1F36" />
@@ -111,6 +112,7 @@ const WALLETS: { id: WalletId; label: string; description: string; icon: React.R
     id: "gemwallet",
     label: "GemWallet",
     description: "Browser extension wallet",
+    wip: true,
     icon: (
       <svg viewBox="0 0 40 40" fill="none" className="w-7 h-7">
         <rect width="40" height="40" rx="10" fill="#1A1F36" />
@@ -268,7 +270,14 @@ export default function WalletConnectPanel() {
             >
               <div className="shrink-0">{w.icon}</div>
               <div className="flex-1">
-                <p className="font-semibold text-brand-text text-sm">{w.label}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-brand-text text-sm">{w.label}</p>
+                  {w.wip && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-brand-purple/20 text-brand-purple/80 border border-brand-purple/20">
+                      Beta
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-brand-text/40 mt-0.5">{w.description}</p>
               </div>
               {isConnecting && (
@@ -293,7 +302,15 @@ export default function WalletConnectPanel() {
       })}
 
       <p className="text-center text-xs text-brand-text/30 mt-2">
-        XRPL Testnet · wss://s.altnet.rippletest.net:51233
+        XRPL Testnet ·{" "}
+        <a
+          href="https://faucet.tequ.dev/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-brand-cyan/60 hover:text-brand-cyan transition-colors underline underline-offset-2"
+        >
+          Get testnet XRP
+        </a>
       </p>
     </div>
   );
