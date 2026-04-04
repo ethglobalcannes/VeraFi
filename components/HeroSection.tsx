@@ -171,12 +171,12 @@ export default function HeroSection() {
         />
       </motion.div>
 
-      <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-6 items-center pt-16">
+      <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-6 items-center pt-16">
 
         {/* ── LEFT: Brand + copy with scroll parallax ── */}
         <motion.div
           style={{ y: textY, opacity }}
-          className="flex flex-col items-start"
+          className="flex flex-col items-center lg:items-start order-2 lg:order-1"
         >
           {/* VeraFi wordmark */}
           <motion.div
@@ -185,7 +185,7 @@ export default function HeroSection() {
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="mb-6"
           >
-            <h1 className="text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-none">
+            <h1 className="text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-none text-center lg:text-left">
               <span className="text-brand-text">Vera</span>
               <motion.span
                 style={{
@@ -224,7 +224,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="text-brand-text/60 text-lg md:text-xl max-w-lg leading-relaxed mb-3"
+            className="text-brand-text/60 text-lg md:text-xl max-w-lg leading-relaxed mb-3 text-center lg:text-left"
           >
             The first options market maker that publishes a{" "}
             <span className="text-brand-text/90 font-medium">cryptographic proof of honest pricing</span>{" "}
@@ -235,7 +235,7 @@ export default function HeroSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.35 }}
-            className="text-brand-text/35 text-sm mb-10"
+            className="text-brand-text/35 text-sm mb-10 text-center lg:text-left"
           >
             Verifiable Options Pricing
           </motion.p>
@@ -245,10 +245,10 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.42 }}
-            className="flex flex-col sm:flex-row gap-4 mb-14"
+            className="flex flex-col sm:flex-row gap-4 mb-14 justify-center lg:justify-start"
           >
-            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link href="/login" className="btn-primary text-white">
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
+              <Link href="/login" className="btn-primary text-white w-full sm:w-auto">
                 Launch App
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -259,14 +259,14 @@ export default function HeroSection() {
               href="#how-it-works"
               whileHover={{ scale: 1.03, borderColor: "rgba(255,255,255,0.25)" }}
               whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-sm text-brand-text/70 hover:text-brand-text border border-white/[0.1] transition-colors duration-200"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-sm text-brand-text/70 hover:text-brand-text border border-white/[0.1] transition-colors duration-200 w-full sm:w-auto"
             >
               How it works
             </motion.a>
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
               <Link
                 href="/executions"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-sm text-brand-cyan/70 hover:text-brand-cyan border border-brand-cyan/10 hover:border-brand-cyan/30 transition-all duration-200"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-sm text-brand-cyan/70 hover:text-brand-cyan border border-brand-cyan/10 hover:border-brand-cyan/30 transition-all duration-200 w-full sm:w-auto"
               >
                 Live Feed
               </Link>
@@ -278,7 +278,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.52 }}
-            className="grid grid-cols-3 gap-px bg-white/[0.06] border border-white/[0.08] rounded-2xl overflow-hidden w-full max-w-md"
+            className="grid grid-cols-3 gap-px bg-white/[0.06] border border-white/[0.08] rounded-2xl overflow-hidden w-full max-w-md mx-auto lg:mx-0"
           >
             {[
               { label: "Proof per Quote", value: "1:1" },
@@ -303,9 +303,10 @@ export default function HeroSection() {
           initial={{ opacity: 0, scale: 0.88 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex items-center justify-center"
+          className="relative flex items-center justify-center order-1 lg:order-2"
         >
-          <div className="relative w-[380px] h-[380px] lg:w-[460px] lg:h-[460px]">
+          {/* Container — bigger on desktop */}
+          <div className="relative w-[300px] h-[300px] sm:w-[360px] sm:h-[360px] lg:w-[540px] lg:h-[540px]">
             <ParticleCanvas />
 
             {/* Orbiting rings */}
@@ -326,34 +327,42 @@ export default function HeroSection() {
               style={{ background: "radial-gradient(circle, #6b8fff 0%, #9b6bff 40%, transparent 70%)" }}
             />
 
-            {/* Floating + mouse-tracked logo */}
+            {/* Mouse-tracking wrapper (Y only, no keyframe here) */}
             <motion.div
               style={{ y: logoMY }}
-              animate={{ y: [-10, 10, -10] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               className="absolute inset-0 flex items-center justify-center"
             >
+              {/* Float keyframe — separate div so it doesn't conflict with spring */}
               <motion.div
-                whileHover={{ scale: 1.08 }}
-                transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                animate={{
-                  filter: [
-                    "drop-shadow(0 0 20px rgba(107,143,255,0.5))",
-                    "drop-shadow(0 0 42px rgba(0,229,255,0.75))",
-                    "drop-shadow(0 0 20px rgba(107,143,255,0.5))",
-                  ],
-                }}
-                // @ts-expect-error framer types
-                transition_animate={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="relative w-48 h-48 lg:w-60 lg:h-60 cursor-pointer"
+                animate={{ y: [-12, 12, -12] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Image
-                  src="/Verafi_Hero_Logo.png"
-                  alt="VeraFi"
-                  fill
-                  priority
-                  className="object-contain rounded-3xl"
-                />
+                {/* Glow pulse — own transition so it doesn't bleed into hover */}
+                <motion.div
+                  animate={{
+                    filter: [
+                      "drop-shadow(0 0 22px rgba(107,143,255,0.5))",
+                      "drop-shadow(0 0 48px rgba(0,229,255,0.8))",
+                      "drop-shadow(0 0 22px rgba(107,143,255,0.5))",
+                    ],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  {/* Hover scale — innermost */}
+                  <motion.div
+                    whileHover={{ scale: 1.07 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 18 }}
+                    className="relative w-44 h-44 sm:w-52 sm:h-52 lg:w-80 lg:h-80 cursor-pointer"
+                  >
+                    <Image
+                      src="/Verafi_Hero_Logo.png"
+                      alt="VeraFi"
+                      fill
+                      priority
+                      className="object-contain rounded-3xl"
+                    />
+                  </motion.div>
+                </motion.div>
               </motion.div>
             </motion.div>
           </div>
