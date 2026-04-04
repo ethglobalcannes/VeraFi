@@ -33,7 +33,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="px-6 pb-28 max-w-4xl mx-auto">
+    <section id="how-it-works" style={{ scrollMarginTop: "80px" }} className="px-6 pb-28 max-w-4xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -69,6 +69,158 @@ export function HowItWorks() {
           </motion.li>
         ))}
       </ol>
+    </section>
+  );
+}
+
+// ── Problem / Solution ────────────────────────────────────────────────────────
+
+const problems = [
+  {
+    icon: "👁️",
+    title: "Black-box pricing",
+    body: "Market makers quote options from hidden models. You have no way to know if the spread is fair or if the model was manipulated for the trade.",
+  },
+  {
+    icon: "🔒",
+    title: "Trust assumed, not earned",
+    body: "Every options platform asks you to trust them. There is no verifiable record that the price you paid reflects an honest computation.",
+  },
+  {
+    icon: "🌉",
+    title: "XRP locked out",
+    body: "Existing DeFi options markets require EVM wallets and wrapped assets. XRP holders face bridges, gas fees, and custodial risks just to access a quote.",
+  },
+];
+
+const solutions = [
+  {
+    icon: "🔐",
+    title: "Pricing inside a TEE",
+    body: "Every quote runs inside a Trusted Execution Environment. The hardware itself guarantees the model cannot be changed, replaced, or observed — not even by us.",
+  },
+  {
+    icon: "⛓️",
+    title: "On-chain attestation",
+    body: "A remote attestation token is published on Flare alongside every quote. Anyone can independently verify the computation was honest before trading.",
+  },
+  {
+    icon: "⚡",
+    title: "Native XRPL settlement",
+    body: "Trade directly from Xaman or Crossmark with a single XRP payment. No bridge, no wrapped token, no EVM wallet required.",
+  },
+];
+
+export function ProblemSolution() {
+  return (
+    <section className="px-6 pb-28 max-w-6xl mx-auto">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.5 }}
+        className="text-center mb-14"
+      >
+        <p className="text-brand-text/40 text-sm uppercase tracking-widest font-medium mb-3">The Case for VeraFi</p>
+        <h2 className="text-3xl md:text-4xl font-bold text-brand-text tracking-tight">
+          Why this matters
+        </h2>
+      </motion.div>
+
+      <div className="grid md:grid-cols-2 gap-5">
+        {/* Problem card */}
+        <motion.div
+          initial={{ opacity: 0, x: -32 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ y: -4, boxShadow: "0 0 40px rgba(255,80,80,0.12)" }}
+          className="rounded-2xl p-px cursor-default"
+          style={{ background: "linear-gradient(135deg, rgba(255,80,80,0.25) 0%, rgba(255,80,80,0.05) 100%)" }}
+        >
+          <motion.div
+            className="rounded-2xl p-7 h-full"
+            style={{ background: "linear-gradient(135deg, rgba(30,12,12,0.98) 0%, rgba(18,12,12,0.98) 100%)" }}
+            whileHover={{ background: "linear-gradient(135deg, rgba(36,14,14,0.98) 0%, rgba(22,14,14,0.98) 100%)" }}
+            transition={{ duration: 0.25 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <motion.span
+                whileHover={{ scale: 1.06, borderColor: "rgba(255,80,80,0.6)" }}
+                transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-red-500/30 text-red-400/80 bg-red-500/5 cursor-default"
+              >
+                The Problem
+              </motion.span>
+            </div>
+            <ul className="space-y-6">
+              {problems.map((p, i) => (
+                <motion.li
+                  key={p.title}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: 0.1 + i * 0.08 }}
+                  className="flex gap-4"
+                >
+                  <span className="text-xl shrink-0 mt-0.5">{p.icon}</span>
+                  <div>
+                    <p className="text-brand-text font-semibold text-sm mb-1">{p.title}</p>
+                    <p className="text-brand-text/45 text-sm leading-relaxed">{p.body}</p>
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
+        </motion.div>
+
+        {/* Solution card */}
+        <motion.div
+          initial={{ opacity: 0, x: 32 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ y: -4, boxShadow: "0 0 48px rgba(107,143,255,0.18)" }}
+          className="rounded-2xl p-px cursor-default"
+          style={{ background: "linear-gradient(135deg, rgba(107,143,255,0.4) 0%, rgba(0,229,255,0.3) 100%)" }}
+        >
+          <motion.div
+            className="rounded-2xl p-7 h-full"
+            style={{ background: "linear-gradient(135deg, rgba(10,16,32,0.98) 0%, rgba(10,20,28,0.98) 100%)" }}
+            whileHover={{ background: "linear-gradient(135deg, rgba(13,20,42,0.98) 0%, rgba(10,24,34,0.98) 100%)" }}
+            transition={{ duration: 0.25 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <motion.span
+                whileHover={{ scale: 1.06, borderColor: "rgba(107,143,255,0.6)" }}
+                transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-brand-blue/30 text-brand-blue/80 bg-brand-blue/5 cursor-default"
+              >
+                The VeraFi Solution
+              </motion.span>
+            </div>
+            <ul className="space-y-6">
+              {solutions.map((s, i) => (
+                <motion.li
+                  key={s.title}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: 0.1 + i * 0.08 }}
+                  className="flex gap-4"
+                >
+                  <span className="text-xl shrink-0 mt-0.5">{s.icon}</span>
+                  <div>
+                    <p className="text-brand-text font-semibold text-sm mb-1">{s.title}</p>
+                    <p className="text-brand-text/45 text-sm leading-relaxed">{s.body}</p>
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
+        </motion.div>
+      </div>
     </section>
   );
 }

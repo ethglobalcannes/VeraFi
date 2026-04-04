@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   description:
     "The first options market maker that publishes a cryptographic proof of honest pricing on-chain with every single quote.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: "/favicon-32.png",
   },
 };
 
