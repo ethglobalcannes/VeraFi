@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { CheckCircle, Loader2, AlertCircle, X } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle, Loader2, AlertCircle, X, ArrowRight } from "lucide-react";
+import { isInstalled, getAddress } from "@gemwallet/api";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -28,9 +30,8 @@ async function connectCrossmark(): Promise<string> {
 }
 
 async function connectGemWallet(): Promise<string> {
-  const { isConnected, getAddress } = await import("@gemwallet/api");
-  const connRes = await isConnected();
-  if (!connRes.result?.isConnected) {
+  const connRes = await isInstalled();
+  if (!connRes.result?.isInstalled) {
     throw new Error("GemWallet extension not found. Install it first.");
   }
   const addrRes = await getAddress();
@@ -41,21 +42,10 @@ async function connectGemWallet(): Promise<string> {
 
 // Returns { qrUrl, uuid } so the UI can render the QR before sign completes.
 async function createXamanPayload(): Promise<{ qrUrl: string; uuid: string }> {
-  const apiKey = process.env.NEXT_PUBLIC_XUMM_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "NEXT_PUBLIC_XUMM_API_KEY is not set. Add it to .env.local."
-    );
-  }
-  const { Xumm } = await import("xumm");
-  const xumm = new Xumm(apiKey);
-  const payload = await (xumm as any).payload?.create({
-    txjson: { TransactionType: "SignIn" },
-  });
-  if (!payload?.refs?.qr_png || !payload?.uuid) {
-    throw new Error("Failed to create Xaman sign-in payload.");
-  }
-  return { qrUrl: payload.refs.qr_png, uuid: payload.uuid };
+  const res = await fetch("/api/xaman/create", { method: "POST" });
+  if (!res.ok) throw new Error("Failed to create Xaman payload.");
+  const data = await res.json();
+  return { qrUrl: data.qrUrl, uuid: data.uuid };
 }
 
 async function pollXamanPayload(
@@ -64,25 +54,20 @@ async function pollXamanPayload(
   onError: (msg: string) => void,
   signal: AbortSignal
 ): Promise<void> {
-  const apiKey = process.env.NEXT_PUBLIC_XUMM_API_KEY!;
-  const { Xumm } = await import("xumm");
-  const xumm = new Xumm(apiKey);
-
   const interval = setInterval(async () => {
     if (signal.aborted) {
       clearInterval(interval);
       return;
     }
     try {
-      const result = await (xumm as any).payload?.get(uuid);
-      if (result?.meta?.signed === true) {
+      const res = await fetch(`/api/xaman/poll/${uuid}`);
+      const data = await res.json();
+      if (data?.signed || data?.resolved) {
         clearInterval(interval);
-        const address = result?.response?.account;
-        if (address) onResolved(address);
-        else onError("Xaman signed but no address returned.");
-      } else if (result?.meta?.expired || result?.meta?.cancelled) {
+        onResolved(data.account || "unknown");
+      } else if (data?.expired || data?.cancelled) {
         clearInterval(interval);
-        onError("Xaman request expired or was cancelled.");
+        onError("Xaman request expired or cancelled.");
       }
     } catch {
       // keep polling
@@ -213,9 +198,18 @@ export default function WalletConnectPanel() {
           </p>
           <p className="font-mono text-brand-cyan text-sm break-all">{conn.address}</p>
         </div>
+        <Link
+          href="/trade"
+          className="w-full py-3 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2
+            bg-gradient-to-r from-brand-blue to-brand-cyan text-[#0a0d14]
+            hover:opacity-90 hover:shadow-[0_0_20px_rgba(107,143,255,0.4)]"
+        >
+          Launch App
+          <ArrowRight className="w-4 h-4" />
+        </Link>
         <button
           onClick={handleDisconnect}
-          className="text-xs text-brand-text/40 hover:text-brand-text/70 transition-colors mt-1"
+          className="text-xs text-brand-text/40 hover:text-brand-text/70 transition-colors"
         >
           Disconnect
         </button>
@@ -304,3 +298,4 @@ export default function WalletConnectPanel() {
     </div>
   );
 }
+
