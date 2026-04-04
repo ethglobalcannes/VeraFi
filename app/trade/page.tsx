@@ -12,9 +12,10 @@ import type { IntentV1 } from "@/types/intent";
 // ---------------------------------------------------------------------------
 // Config — swap these when Daniel / Hamza share the real addresses
 // ---------------------------------------------------------------------------
-const VAULT_ADDRESS = "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe"; // TODO: replace with VeraFi vault
-const PREMIUM_DROPS = "5000000"; // 5 XRP fixed (Daniel's mock)
-const XRPL_EXPLORER = "https://testnet.xrpl.org/transactions";
+const VAULT_ADDRESS   = "rEyj8nsHLdgt79KJWzXR5BgF7ZbaohbXwq"; // Marcos's vault
+const PREMIUM_DROPS  = "5000000"; // 5 XRP fixed (Daniel's mock)
+const XRPL_EXPLORER  = "https://testnet.xrpl.org/transactions";
+const INTENT_POST_URL = ""; // TODO: replace with Marcos's backend endpoint
 
 // ---------------------------------------------------------------------------
 // Types
@@ -143,7 +144,7 @@ export default function TradePage() {
   // ── Buy Option ───────────────────────────────────────────────────────────
   const handleBuy = useCallback(async () => {
     if (quoteState.status !== "success") return;
-    const { intent } = quoteState;
+    const { intent, quote } = quoteState;
 
     setBuyState({ status: "confirming" });
 
@@ -175,6 +176,30 @@ export default function TradePage() {
 
       if (!txHash) {
         throw new Error("Transaction did not return a hash. Check your wallet.");
+      }
+
+      // POST intent + txHash to Marcos's backend
+      if (INTENT_POST_URL) {
+        try {
+          await fetch(INTENT_POST_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              intentId:   intent.intentId,
+              action:     intent.action,
+              underlying: intent.underlying,
+              amount:     intent.amount,
+              strike:     intent.strike,
+              expiry:     intent.expiry,
+              isPut:      intent.isPut,
+              quoteId:    quote.quoteId,
+              txHash,
+            }),
+          });
+        } catch (postErr) {
+          // TX is already on-chain — log quietly, don't block success
+          console.warn("[VeraFi] Backend POST failed:", postErr);
+        }
       }
 
       setBuyState({ status: "success", txHash });
