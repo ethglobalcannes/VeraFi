@@ -5,7 +5,7 @@ import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
 import {
   ArrowLeft, Shield, Loader2, AlertCircle, ChevronDown,
-  CheckCircle2, Clock, TrendingUp, Zap, ExternalLink, Copy,
+  CheckCircle2, Clock, TrendingUp, Zap, ExternalLink, Copy, Activity,
 } from "lucide-react";
 import type { IntentV1 } from "@/types/intent";
 
@@ -209,9 +209,18 @@ export default function TradePage() {
         <span className="font-semibold text-brand-text">VeraFi</span>
         <span className="text-brand-text/30">·</span>
         <span className="text-sm text-brand-text/50">Options RFQ</span>
-        <div className="ml-auto flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-full px-3 py-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
-          <span className="text-xs text-brand-text/50 font-mono">Flare Coston2</span>
+        <div className="ml-auto flex items-center gap-3">
+          <Link
+            href="/executions"
+            className="text-xs text-brand-cyan/60 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+          >
+            <Activity className="w-3.5 h-3.5" />
+            Live Feed
+          </Link>
+          <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-full px-3 py-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
+            <span className="text-xs text-brand-text/50 font-mono">Flare Coston2</span>
+          </div>
         </div>
       </nav>
 
