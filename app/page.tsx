@@ -136,6 +136,12 @@ export default function LandingPage() {
           >
             How it works
           </a>
+          <Link
+            href="/executions"
+            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-sm text-brand-cyan/70 hover:text-brand-cyan border border-brand-cyan/10 hover:border-brand-cyan/30 transition-all duration-200"
+          >
+            Live Feed
+          </Link>
         </div>
 
         {/* Stats bar */}
