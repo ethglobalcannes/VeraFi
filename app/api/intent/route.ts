@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MARCOS_ENDPOINT = "https://unindicated-latrice-snobbishly.ngrok-free.dev/api/intent/memo";
+const MARCOS_ENDPOINT = "https://unindicated-latrice-snobbishly.ngrok-free.dev/api/intents/memo";
 
 export async function POST(req: NextRequest) {
   try {
