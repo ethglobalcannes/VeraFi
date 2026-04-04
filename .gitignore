@@ -1,6 +1,9 @@
 # Claude Code
 .claude/
 
+# Local docs
+DOC/
+
 # Dependencies
 node_modules/
 /.pnp
@@ -35,3 +38,4 @@ next-env.d.ts
 # OS
 .DS_Store
 Thumbs.db
+DOC/
