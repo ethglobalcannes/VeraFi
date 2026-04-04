@@ -15,7 +15,7 @@ import type { IntentV1 } from "@/types/intent";
 const VAULT_ADDRESS   = "rEyj8nsHLdgt79KJWzXR5BgF7ZbaohbXwq"; // Marcos's vault
 const PREMIUM_DROPS  = "5000000"; // 5 XRP fixed (Daniel's mock)
 const XRPL_EXPLORER  = "https://testnet.xrpl.org/transactions";
-const INTENT_POST_URL = ""; // TODO: replace with Marcos's backend endpoint
+const INTENT_POST_URL = "/api/intent"; // proxied server-side → no CORS
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,6 +58,14 @@ type BuyState =
   | { status: "success"; txHash: string }
   | { status: "error"; message: string };
 
+type IntentResponse = {
+  memo: string;
+  encodedInstruction: string;
+  instructionHash: string;
+  operatorAddress: string;
+  instructionFee: string;
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -98,6 +106,7 @@ export default function TradePage() {
   >({ status: "idle" });
 
   const [buyState, setBuyState] = useState<BuyState>({ status: "idle" });
+  const [intentResponse, setIntentResponse] = useState<IntentResponse | null>(null);
   const [expiryOpen, setExpiryOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -123,6 +132,7 @@ export default function TradePage() {
 
     setQuoteState({ status: "loading" });
     setBuyState({ status: "idle" });
+    setIntentResponse(null);
 
     try {
       const res = await fetch("/api/quote", {
@@ -171,31 +181,56 @@ export default function TradePage() {
         ],
       });
 
+      // Log full result so we can inspect the shape in console
+      console.log("[VeraFi] signAndSubmitAndWait result:", JSON.stringify(result, null, 2));
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const txHash = (result?.response?.data?.resp as any)?.result?.hash as string | undefined;
+      const data = result?.response?.data as any;
+
+      // Try every known path Crossmark has used across SDK versions
+      const txHash: string =
+        data?.resp?.result?.hash ||
+        data?.resp?.hash ||
+        data?.result?.hash ||
+        data?.hash ||
+        (result as any)?.hash ||
+        "";
+
+      const xrplAddress: string =
+        data?.address ||
+        (sdk as any).session?.address ||
+        "";
+
+      console.log("[VeraFi] txHash:", txHash, "| xrplAddress:", xrplAddress);
 
       if (!txHash) {
-        throw new Error("Transaction did not return a hash. Check your wallet.");
+        throw new Error("Transaction did not return a hash — see console for full result shape.");
       }
 
-      // POST intent + txHash to Marcos's backend
+      // POST to Marcos's backend — required fields match his schema exactly,
+      // extra fields (intentId, quoteId, txHash) are harmless bonus context
       if (INTENT_POST_URL) {
         try {
-          await fetch(INTENT_POST_URL, {
+          const postRes = await fetch(INTENT_POST_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+              // ── Marcos's schema ──────────────────────────────────
+              xrplAddress,
+              amount:  intent.amount,           // string ✓
+              strike:  intent.strike,           // string ✓
+              expiry:  String(intent.expiry),   // schema wants string
+              isPut:   intent.isPut,            // boolean ✓
+              // ── Extra context ─────────────────────────────────────
               intentId:   intent.intentId,
-              action:     intent.action,
-              underlying: intent.underlying,
-              amount:     intent.amount,
-              strike:     intent.strike,
-              expiry:     intent.expiry,
-              isPut:      intent.isPut,
               quoteId:    quote.quoteId,
               txHash,
             }),
           });
+          if (postRes.ok) {
+            const ir: IntentResponse = await postRes.json();
+            setIntentResponse(ir);
+          }
         } catch (postErr) {
           // TX is already on-chain — log quietly, don't block success
           console.warn("[VeraFi] Backend POST failed:", postErr);
@@ -522,6 +557,7 @@ export default function TradePage() {
               {/* ── Buy / TX status ── */}
               {buyState.status === "success" ? (
                 <div className="glass-card p-5 border border-brand-cyan/30 flex flex-col gap-3">
+                  {/* Header */}
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-brand-cyan/10 flex items-center justify-center">
                       <CheckCircle2 className="w-4 h-4 text-brand-cyan" />
@@ -531,28 +567,67 @@ export default function TradePage() {
                       <p className="text-xs text-brand-text/40">XRPL Payment with RFQ memo confirmed</p>
                     </div>
                   </div>
-                  <div className="bg-white/[0.03] rounded-xl px-4 py-3 flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-brand-text/60 truncate">{buyState.txHash}</span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => copyHash(buyState.txHash)}
-                        className="text-brand-text/40 hover:text-brand-text/80 transition-colors"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                      <a
-                        href={`${XRPL_EXPLORER}/${buyState.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-brand-cyan hover:text-brand-cyan/80 transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+
+                  {/* XRPL tx hash */}
+                  <div>
+                    <p className="text-xs text-brand-text/30 mb-1.5 uppercase tracking-widest font-medium">XRPL Transaction</p>
+                    <div className="bg-white/[0.03] rounded-xl px-4 py-3 flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-brand-text/60 truncate">{buyState.txHash}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => copyHash(buyState.txHash)}
+                          className="text-brand-text/40 hover:text-brand-text/80 transition-colors"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <a
+                          href={`${XRPL_EXPLORER}/${buyState.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-cyan hover:text-brand-cyan/80 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Intent response from Marcos's backend */}
+                  {intentResponse && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-xs text-brand-text/30 uppercase tracking-widest font-medium">Instruction (Flare)</p>
+                      <div className="bg-white/[0.03] rounded-xl p-4 flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs text-brand-text/40">Instruction Hash</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-brand-blue truncate max-w-[140px]">
+                              {shortHash(intentResponse.instructionHash)}
+                            </span>
+                            <button
+                              onClick={() => copyHash(intentResponse.instructionHash)}
+                              className="text-brand-text/30 hover:text-brand-text/70 transition-colors"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs text-brand-text/40">Encoded Instruction</span>
+                          <span className="font-mono text-xs text-brand-text/50 truncate max-w-[160px]">
+                            {shortHash(intentResponse.encodedInstruction)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs text-brand-text/40">Instruction Fee</span>
+                          <span className="font-mono text-xs text-brand-cyan">{intentResponse.instructionFee} drops</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {copied && <p className="text-xs text-brand-cyan text-center">Copied!</p>}
                   <button
-                    onClick={() => { setQuoteState({ status: "idle" }); setBuyState({ status: "idle" }); }}
+                    onClick={() => { setQuoteState({ status: "idle" }); setBuyState({ status: "idle" }); setIntentResponse(null); }}
                     className="text-xs text-brand-text/40 hover:text-brand-text/70 transition-colors text-center"
                   >
                     New quote →
