@@ -21,8 +21,8 @@ type WalletManagerInstance = {
 
 async function buildManager(): Promise<WalletManagerInstance | null> {
   try {
-    const mod = await import("xrpl-connect" as string);
-    return new (mod as any).WalletManager();
+    const mod = await import("xrpl-connect");
+    return new mod.WalletManager();
   } catch {
     return null;
   }
@@ -32,11 +32,11 @@ async function buildAdapter(
   wallet: "xaman" | "crossmark" | "gemwallet"
 ): Promise<unknown | null> {
   try {
-    const mod = await import("xrpl-connect" as string);
+    const mod = await import("xrpl-connect");
     const map: Record<string, new () => unknown> = {
-      xaman: (mod as any).XamanAdapter,
-      crossmark: (mod as any).CrossmarkAdapter,
-      gemwallet: (mod as any).GemWalletAdapter,
+      xaman: mod.XamanAdapter,
+      crossmark: mod.CrossmarkAdapter,
+      gemwallet: mod.GemWalletAdapter,
     };
     const Cls = map[wallet];
     return Cls ? new Cls() : null;

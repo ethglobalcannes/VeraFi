@@ -11,7 +11,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative w-8 h-8">
             <Image
-              src="/verafi_brand_logo.jpg"
+              src="/Verafi_Hero_Logo.png"
               alt="VeraFi"
               fill
               className="object-contain rounded-md"

@@ -62,7 +62,7 @@ export default function LandingPage() {
         >
           <div className="relative w-20 h-20 mx-auto">
             <Image
-              src="/verafi_brand_logo.jpg"
+              src="/Verafi_Hero_Logo.png"
               alt="VeraFi Logo"
               fill
               priority
@@ -294,7 +294,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="relative w-6 h-6">
-              <Image src="/verafi_brand_logo.jpg" alt="VeraFi" fill className="object-contain rounded" />
+              <Image src="/Verafi_Hero_Logo.png" alt="VeraFi" fill className="object-contain rounded" />
             </div>
             <span className="text-sm font-medium text-brand-text/60">
               Vera<span className="text-brand-blue">Fi</span>

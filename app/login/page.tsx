@@ -33,7 +33,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center mb-8">
           <div className="relative w-14 h-14 mb-4">
             <Image
-              src="/verafi_brand_logo.jpg"
+              src="/Verafi_Hero_Logo.png"
               alt="VeraFi"
               fill
               priority
@@ -52,12 +52,6 @@ export default function LoginPage() {
         {/* Wallet panel */}
         <WalletConnectPanel />
 
-        {/* Footer note */}
-        <p className="mt-6 text-center text-xs text-brand-text/25 leading-relaxed">
-          By connecting, you acknowledge you are using the XRPL Testnet.
-          <br />
-          No real funds are at risk.
-        </p>
       </div>
     </div>
   );
