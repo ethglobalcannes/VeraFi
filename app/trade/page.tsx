@@ -181,13 +181,9 @@ export default function TradePage() {
         ],
       });
 
-      // Log full result so we can inspect the shape in console
-      console.log("[VeraFi] signAndSubmitAndWait result:", JSON.stringify(result, null, 2));
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = result?.response?.data as any;
 
-      // Try every known path Crossmark has used across SDK versions
       const txHash: string =
         data?.resp?.result?.hash ||
         data?.resp?.hash ||
@@ -196,48 +192,23 @@ export default function TradePage() {
         (result as any)?.hash ||
         "";
 
-      const xrplAddress: string =
-        data?.address ||
-        (sdk as any).session?.address ||
-        "";
-
-      console.log("[VeraFi] txHash:", txHash, "| xrplAddress:", xrplAddress);
-
       if (!txHash) {
         throw new Error("Transaction did not return a hash — see console for full result shape.");
       }
 
-      // POST to Marcos's backend — required fields match his schema exactly,
-      // extra fields (intentId, quoteId, txHash) are harmless bonus context
-      if (INTENT_POST_URL) {
-        try {
-          const postRes = await fetch(INTENT_POST_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              // ── Marcos's schema ──────────────────────────────────
-              xrplAddress,
-              amount:  intent.amount,           // string ✓
-              strike:  intent.strike,           // string ✓
-              expiry:  String(intent.expiry),   // schema wants string
-              isPut:   intent.isPut,            // boolean ✓
-              // ── Extra context ─────────────────────────────────────
-              intentId:   intent.intentId,
-              quoteId:    quote.quoteId,
-              txHash,
-            }),
-          });
-          if (postRes.ok) {
-            const ir: IntentResponse = await postRes.json();
-            setIntentResponse(ir);
-          }
-        } catch (postErr) {
-          // TX is already on-chain — log quietly, don't block success
-          console.warn("[VeraFi] Backend POST failed:", postErr);
-        }
-      }
-
       setBuyState({ status: "success", txHash });
+
+      // Call Relay.submitRFQ() on Flare Coston2 — fire-and-forget
+      fetch("/api/relay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          strike:   intent.strike,
+          expiry:   intent.expiry,
+          isPut:    intent.isPut,
+          quantity: intent.amount,
+        }),
+      }).catch((e) => console.warn("[VeraFi] Relay call failed:", e));
     } catch (err) {
       setBuyState({
         status: "error",

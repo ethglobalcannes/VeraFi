@@ -7,7 +7,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import FeatureCard from "@/components/FeatureCard";
 import HeroSection from "@/components/HeroSection";
-import { HowItWorks, CTABanner, FeaturesHeader } from "@/components/LandingSections";
+import { HowItWorks, CTABanner, FeaturesHeader, ProblemSolution } from "@/components/LandingSections";
 
 function ShieldIcon() {
   return (
@@ -43,28 +43,29 @@ function FeaturesSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.4], [0, 1]);
 
   return (
-    <motion.section
-      ref={ref}
-      id="features"
-      style={{ y, opacity }}
-      className="px-6 pb-28 max-w-6xl mx-auto"
-    >
-      <FeaturesHeader />
-      <div className="grid md:grid-cols-3 gap-5">
-        <FeatureCard icon={<ShieldIcon />} glowColor="blue" delay={0}
-          title="Attested Pricing"
-          description="Every option quote is computed inside a Trusted Execution Environment (TEE). Tamper-proof hardware ensures the pricing model cannot be altered — not even by us."
-        />
-        <FeatureCard icon={<ChainIcon />} glowColor="cyan" delay={120}
-          title="On-Chain Proof"
-          description="An attestation token is stored on-chain alongside every quote. Anyone can independently verify that the price was computed honestly inside the TEE — zero trust required."
-        />
-        <FeatureCard icon={<WalletIcon />} glowColor="purple" delay={240}
-          title="XRPL Native"
-          description="XRP users connect directly via Xaman or Crossmark. No bridge, no EVM wallet, no wrapped assets — options trading where XRP already lives."
-        />
-      </div>
-    </motion.section>
+    <div id="features" style={{ scrollMarginTop: "80px" }}>
+      <motion.section
+        ref={ref}
+        style={{ y, opacity }}
+        className="px-6 pb-28 max-w-6xl mx-auto"
+      >
+        <FeaturesHeader />
+        <div className="grid md:grid-cols-3 gap-5">
+          <FeatureCard icon={<ShieldIcon />} glowColor="blue" delay={0}
+            title="Attested Pricing"
+            description="Every option quote is computed inside a Trusted Execution Environment (TEE). Tamper-proof hardware ensures the pricing model cannot be altered — not even by us."
+          />
+          <FeatureCard icon={<ChainIcon />} glowColor="cyan" delay={120}
+            title="On-Chain Proof"
+            description="An attestation token is stored on-chain alongside every quote. Anyone can independently verify that the price was computed honestly inside the TEE — zero trust required."
+          />
+          <FeatureCard icon={<WalletIcon />} glowColor="purple" delay={240}
+            title="XRPL Native"
+            description="XRP users connect directly via Xaman or Crossmark. No bridge, no EVM wallet, no wrapped assets — options trading where XRP already lives."
+          />
+        </div>
+      </motion.section>
+    </div>
   );
 }
 
@@ -78,6 +79,7 @@ export default function LandingPage() {
       <FeaturesSection />
 
       <HowItWorks />
+      <ProblemSolution />
       <CTABanner />
 
       {/* ── Footer ── */}
