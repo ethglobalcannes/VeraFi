@@ -185,6 +185,21 @@ export default function TradePage() {
         "";
 
       setBuyState({ status: "success", txHash: txHash || "confirmed" });
+
+      // Call Relay.submitRFQ() on Flare Coston2 after XRP payment confirms
+      fetch("/api/relay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          strike:   intent.strike,
+          expiry:   intent.expiry,
+          isPut:    intent.isPut,
+          quantity: intent.amount,
+        }),
+      })
+        .then(r => r.json())
+        .then(d => console.log("[VeraFi] relay result:", d))
+        .catch(e => console.warn("[VeraFi] relay failed:", e));
     } catch (err) {
       setBuyState({
         status: "error",
