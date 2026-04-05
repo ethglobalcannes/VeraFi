@@ -2,9 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 
 const RELAY_ADDRESS = "0xef6061886eecf6879723b8c5a3A258dc72B12EBb";
+const FXRP_ADDRESS  = "0x0b6A3645c240605887a5532109323A3E12273dc7";
 const RELAY_ABI = [
   "function submitRFQ(address asset, uint256 strike, uint256 expiry, bool isPut, uint256 quantity)",
 ];
+
+export async function GET() {
+  try {
+    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+    const relay = new ethers.Contract(
+      RELAY_ADDRESS,
+      ["function owner() view returns (address)"],
+      provider,
+    );
+    const owner: string = await relay.owner();
+    const rawKey = process.env.PRIVATE_KEY ?? "";
+    const privateKey = rawKey.startsWith("0x") ? rawKey : `0x${rawKey}`;
+    const wallet = new ethers.Wallet(privateKey);
+    console.log("[relay] on-chain owner:", owner);
+    console.log("[relay] our wallet:    ", wallet.address);
+    console.log("[relay] match:", owner.toLowerCase() === wallet.address.toLowerCase());
+    return NextResponse.json({ owner, ourWallet: wallet.address });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,9 +43,9 @@ export async function POST(req: NextRequest) {
     const relay      = new ethers.Contract(RELAY_ADDRESS, RELAY_ABI, wallet);
 
     const tx = await relay.submitRFQ(
-      ethers.ZeroAddress,
+      FXRP_ADDRESS,
       ethers.parseUnits(String(strike), 6),
-      BigInt(expiry),
+      1_000_000_000_000n,
       isPut,
       ethers.parseUnits(String(quantity), 6),
     );
