@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 
 const RELAY_ADDRESS = "0xef6061886eecf6879723b8c5a3A258dc72B12EBb";
-const FXRP_ADDRESS  = "0x0b6A3645c240605887a5532109323A3E12273dc7";
 const RELAY_ABI = [
   "function submitRFQ(address asset, uint256 strike, uint256 expiry, bool isPut, uint256 quantity)",
 ];
@@ -19,9 +18,6 @@ export async function GET() {
     const rawKey = process.env.PRIVATE_KEY ?? "";
     const privateKey = rawKey.startsWith("0x") ? rawKey : `0x${rawKey}`;
     const wallet = new ethers.Wallet(privateKey);
-    console.log("[relay] on-chain owner:", owner);
-    console.log("[relay] our wallet:    ", wallet.address);
-    console.log("[relay] match:", owner.toLowerCase() === wallet.address.toLowerCase());
     return NextResponse.json({ owner, ourWallet: wallet.address });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -32,50 +28,31 @@ export async function POST(req: NextRequest) {
   try {
     const { strike, expiry, isPut, quantity } = await req.json();
 
-    console.log("[relay] submitRFQ params:", { strike, expiry, isPut, quantity });
-
     const rawKey = process.env.PRIVATE_KEY;
     if (!rawKey) throw new Error("PRIVATE_KEY env var not set");
 
     const privateKey = rawKey.startsWith("0x") ? rawKey : `0x${rawKey}`;
-    const provider   = new ethers.JsonRpcProvider(process.env.RPC_URL);
-    const wallet     = new ethers.Wallet(privateKey, provider);
-    const relay      = new ethers.Contract(RELAY_ADDRESS, RELAY_ABI, wallet);
+    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+    const wallet = new ethers.Wallet(privateKey, provider);
+
+    const relay = new ethers.Contract(RELAY_ADDRESS, RELAY_ABI, wallet);
+
+    const fxrpAddress = process.env.FXRP_ADDRESS ?? "0x0b6A3645c240605887a5532109323A3E12273dc7";
+    const strikeWei = ethers.parseUnits(String(strike), 18);
+    const expiryTs = BigInt(Math.floor(new Date(expiry).getTime() / 1000));
+    const quantityWei = ethers.parseUnits(String(quantity), 18);
 
     const tx = await relay.submitRFQ(
-      FXRP_ADDRESS,
-      ethers.parseUnits(String(strike), 6),
-      1_000_000_000_000n,
+      fxrpAddress,
+      strikeWei,
+      expiryTs,
       isPut,
-      ethers.parseUnits(String(quantity), 6),
+      quantityWei,
     );
-
-    console.log("[relay] tx broadcast — hash:", tx.hash);
-
     const receipt = await tx.wait();
 
-    if (!receipt) {
-      console.error("[relay] tx.wait() returned null");
-      return NextResponse.json({ error: "Transaction not mined" }, { status: 500 });
-    }
-
-    const success = receipt.status === 1;
-    console.log("[relay] status:", success ? "SUCCESS" : "REVERTED");
-    console.log("[relay] block:", receipt.blockNumber, "| gasUsed:", receipt.gasUsed.toString());
-    console.log("[relay] tx mined — hash:", receipt.hash);
-
-    return NextResponse.json({ txHash: receipt.hash, success });
-  } catch (err: unknown) {
-    const revertReason =
-      (err as any)?.revert?.args?.[0] ??
-      (err as any)?.reason ??
-      (err as any)?.shortMessage ??
-      null;
-    console.error("[relay] submitRFQ failed:", err);
-    if (revertReason) console.error("[relay] revert reason:", revertReason);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Unknown error", revertReason },
-      { status: 500 },
-    );
+    return NextResponse.json({ txHash: receipt.hash });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

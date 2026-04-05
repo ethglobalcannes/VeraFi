@@ -593,20 +593,16 @@ export default function TradePage() {
                     </>
                   ) : (
                     <>
-                      <Shield className="w-4 h-4" />
-                      Buy Option · 5 XRP
+                      <Zap className="w-4 h-4" />
+                      Buy Option
                     </>
                   )}
                 </button>
               )}
-
-              <p className="text-xs text-brand-text/20 text-center">
-                Sends XRPL Payment with IntentV1 memo → VeraFi vault ·{" "}
-                <span className="font-mono">{shortHash(VAULT_ADDRESS)}</span>
-              </p>
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
