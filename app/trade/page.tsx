@@ -15,7 +15,6 @@ import type { IntentV1 } from "@/types/intent";
 const VAULT_ADDRESS   = "rEyj8nsHLdgt79KJWzXR5BgF7ZbaohbXwq"; // Marcos's vault
 const PREMIUM_DROPS  = "5000000"; // 5 XRP fixed (Daniel's mock)
 const XRPL_EXPLORER  = "https://testnet.xrpl.org/transactions";
-const INTENT_POST_URL = "/api/intent"; // proxied server-side → no CORS
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,13 +57,6 @@ type BuyState =
   | { status: "success"; txHash: string }
   | { status: "error"; message: string };
 
-type IntentResponse = {
-  memo: string;
-  encodedInstruction: string;
-  instructionHash: string;
-  operatorAddress: string;
-  instructionFee: string;
-};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -106,7 +98,7 @@ export default function TradePage() {
   >({ status: "idle" });
 
   const [buyState, setBuyState] = useState<BuyState>({ status: "idle" });
-  const [intentResponse, setIntentResponse] = useState<IntentResponse | null>(null);
+
   const [expiryOpen, setExpiryOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -132,7 +124,7 @@ export default function TradePage() {
 
     setQuoteState({ status: "loading" });
     setBuyState({ status: "idle" });
-    setIntentResponse(null);
+
 
     try {
       const res = await fetch("/api/quote", {
@@ -154,7 +146,7 @@ export default function TradePage() {
   // ── Buy Option ───────────────────────────────────────────────────────────
   const handleBuy = useCallback(async () => {
     if (quoteState.status !== "success") return;
-    const { intent, quote } = quoteState;
+    const { intent } = quoteState;
 
     setBuyState({ status: "confirming" });
 
@@ -192,23 +184,7 @@ export default function TradePage() {
         (result as any)?.hash ||
         "";
 
-      if (!txHash) {
-        throw new Error("Transaction did not return a hash — see console for full result shape.");
-      }
-
-      setBuyState({ status: "success", txHash });
-
-      // Call Relay.submitRFQ() on Flare Coston2 — fire-and-forget
-      fetch("/api/relay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          strike:   intent.strike,
-          expiry:   intent.expiry,
-          isPut:    intent.isPut,
-          quantity: intent.amount,
-        }),
-      }).catch((e) => console.warn("[VeraFi] Relay call failed:", e));
+      setBuyState({ status: "success", txHash: txHash || "confirmed" });
     } catch (err) {
       setBuyState({
         status: "error",
@@ -563,42 +539,9 @@ export default function TradePage() {
                     </div>
                   </div>
 
-                  {/* Intent response from Marcos's backend */}
-                  {intentResponse && (
-                    <div className="flex flex-col gap-2">
-                      <p className="text-xs text-brand-text/30 uppercase tracking-widest font-medium">Instruction (Flare)</p>
-                      <div className="bg-white/[0.03] rounded-xl p-4 flex flex-col gap-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-brand-text/40">Instruction Hash</span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-brand-blue truncate max-w-[140px]">
-                              {shortHash(intentResponse.instructionHash)}
-                            </span>
-                            <button
-                              onClick={() => copyHash(intentResponse.instructionHash)}
-                              className="text-brand-text/30 hover:text-brand-text/70 transition-colors"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-brand-text/40">Encoded Instruction</span>
-                          <span className="font-mono text-xs text-brand-text/50 truncate max-w-[160px]">
-                            {shortHash(intentResponse.encodedInstruction)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-brand-text/40">Instruction Fee</span>
-                          <span className="font-mono text-xs text-brand-cyan">{intentResponse.instructionFee} drops</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {copied && <p className="text-xs text-brand-cyan text-center">Copied!</p>}
                   <button
-                    onClick={() => { setQuoteState({ status: "idle" }); setBuyState({ status: "idle" }); setIntentResponse(null); }}
+                    onClick={() => { setQuoteState({ status: "idle" }); setBuyState({ status: "idle" }); }}
                     className="text-xs text-brand-text/40 hover:text-brand-text/70 transition-colors text-center"
                   >
                     New quote →
